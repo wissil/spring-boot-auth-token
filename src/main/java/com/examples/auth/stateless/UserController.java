@@ -2,6 +2,8 @@ package com.examples.auth.stateless;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class UserController {
+	
+	private static final String AUTH_HEADER_NAME = "X-AUTH-TOKEN";
 
 	@Autowired
 	private UserRepository userRepository;
@@ -33,6 +37,9 @@ public class UserController {
 	
 	@Autowired
 	private TokenCache cache;
+	
+	@Autowired
+	private HttpServletRequest request;
 	
 	@RequestMapping(value = "/api/login", method = RequestMethod.POST)
 	public String login(@RequestBody final LoginRequestDTO login) {		
@@ -56,8 +63,12 @@ public class UserController {
 		return token;
 	}
 	
+	@RequestMapping(value = "/user/logout", method = RequestMethod.GET)
 	public void logout() {
+		final String token = request.getHeader(AUTH_HEADER_NAME);
+		System.out.println("TOKEN: " + token);
 		
+		cache.delete(token);
 	}
 
 	@RequestMapping(value = "/api/users/current", method = RequestMethod.GET)
@@ -73,6 +84,16 @@ public class UserController {
 		 * Throw exception.
 		 */
 		throw new InvalidLoginException("User not logged in.");
+	}
+	
+	@RequestMapping(value = "/admin/hello", method = RequestMethod.GET)
+	public ResponseEntity<String> helloAdmin() {
+		return new ResponseEntity<String>("Hello, admin!", HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/user/hello", method = RequestMethod.GET)
+	public ResponseEntity<String> helloUser() {
+		return new ResponseEntity<String>("Hello, user!", HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/admin/api/users/{user}/grant/role/{role}", method = RequestMethod.POST)

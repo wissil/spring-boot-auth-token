@@ -16,6 +16,10 @@ public class TokenCache {
 		cache.put(authToken, userId);
 	}
 	
+	public void delete(String authToken) {
+		cache.invalidate(authToken);
+	}
+	
 	public Long getUserIdForToken(String authToken) {
 		System.out.println("Getting internal...");
 		System.out.println("Getting: " + cache.getIfPresent(authToken));

@@ -53,7 +53,7 @@ public class StatelessAuthenticationSecurityConfig extends WebSecurityConfigurer
 		.antMatchers("/admin/**").hasRole("ADMIN")
 
 		//all other request need to be authenticated
-		.anyRequest().hasRole("USER").and()				
+		.anyRequest().hasAnyRole("USER", "ADMIN").and()				
 
 		// custom JSON based authentication by POST of {"username":"<name>","password":"<password>"} which sets the token header upon authentication
 		//.addFilterBefore(new StatelessLoginFilter("/api/login", tokenAuthenticationService, userDetailsService, authenticationManager()), UsernamePasswordAuthenticationFilter.class)

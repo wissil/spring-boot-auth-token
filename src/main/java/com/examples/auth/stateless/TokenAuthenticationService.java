@@ -43,10 +43,6 @@ public class TokenAuthenticationService {
 		response.setContentType("application/json");
 		
 		cache.put(token, user.getId());
-		
-		//JsonNode json = new ObjectMapper().valueToTree(new LoginResponseDTO(token));
-		
-		//esponse.getOutputStream().write(json.toString().getBytes());
 	}
 
 	public Authentication getAuthentication(HttpServletRequest request) {
@@ -56,6 +52,8 @@ public class TokenAuthenticationService {
 			System.out.println("Cache... " + cache);
 			System.out.println("Token: " + token);
 			final Long userId = cache.getUserIdForToken(token);
+			if (userId == null) return null;
+			
 			System.out.println("User ID: " + userId);
 			final User user = repository.findById(userId);
 			System.out.println("User: " + user);
@@ -65,7 +63,7 @@ public class TokenAuthenticationService {
 		}
 		return null;
 	}
-	
+		
 	public TokenHandler getTokenHandler() {
 		return tokenHandler;
 	}
