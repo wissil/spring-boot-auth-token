@@ -21,8 +21,6 @@ public class TokenCache {
 	}
 	
 	public Long getUserIdForToken(String authToken) {
-		System.out.println("Getting internal...");
-		System.out.println("Getting: " + cache.getIfPresent(authToken));
 		return cache.getIfPresent(authToken);
 	}
 }

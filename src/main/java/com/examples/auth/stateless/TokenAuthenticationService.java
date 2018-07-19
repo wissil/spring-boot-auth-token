@@ -1,15 +1,11 @@
 package com.examples.auth.stateless;
 
-import java.io.IOException;
 import java.util.Objects;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotNull;
-import javax.xml.bind.DatatypeConverter;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -25,46 +21,34 @@ public class TokenAuthenticationService {
 	
 	private final UserRepository repository;
 
-	@Autowired
+	@Inject
 	public TokenAuthenticationService(
-			@Value("${token.secret}") String secret,
 			@NotNull TokenCache cache,
-			@NotNull UserRepository repository) {
-		this.tokenHandler = new TokenHandler(DatatypeConverter.parseBase64Binary(secret));
+			@NotNull UserRepository repository,
+			@NotNull TokenHandler tokenHandler) {
+		this.tokenHandler = Objects.requireNonNull(tokenHandler);
 		this.cache = Objects.requireNonNull(cache);
 		this.repository = Objects.requireNonNull(repository);
 	}
 
-	public void addAuthentication(HttpServletResponse response, UserAuthentication authentication) throws IOException {
+	public void addAuthentication(UserAuthentication authentication) {
 		final User user = authentication.getDetails();
 		
-		final String token = tokenHandler.createTokenForUser(user);
-		response.addHeader(AUTH_HEADER_NAME, token);
-		response.setContentType("application/json");
-		
+		final String token = tokenHandler.createToken();
 		cache.put(token, user.getId());
 	}
 
 	public Authentication getAuthentication(HttpServletRequest request) {
 		final String token = request.getHeader(AUTH_HEADER_NAME);
 		if (token != null) {
-			//final User user = tokenHandler.parseUserFromToken(token);
-			System.out.println("Cache... " + cache);
-			System.out.println("Token: " + token);
 			final Long userId = cache.getUserIdForToken(token);
 			if (userId == null) return null;
 			
-			System.out.println("User ID: " + userId);
 			final User user = repository.findById(userId);
-			System.out.println("User: " + user);
 			if (user != null) {
 				return new UserAuthentication(user);
 			}
 		}
 		return null;
-	}
-		
-	public TokenHandler getTokenHandler() {
-		return tokenHandler;
 	}
 }

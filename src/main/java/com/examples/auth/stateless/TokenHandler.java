@@ -1,88 +1,32 @@
 package com.examples.auth.stateless;
 
-import java.security.InvalidKeyException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
+import java.util.UUID;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.binary.Hex;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class TokenHandler {
 
-	private static final String HMAC_ALGO = "HmacSHA256";
-	private static final String SEPARATOR = ".";
-//	private static final String SEPARATOR_SPLITTER = "\\.";
+	private static final String HASH_ALGO = "SHA-256";
 
-	private final Mac hmac;
+	private final MessageDigest salt;
 
-	public TokenHandler(byte[] secretKey) {
+	public TokenHandler() {
 		try {
-			hmac = Mac.getInstance(HMAC_ALGO);
-			hmac.init(new SecretKeySpec(secretKey, HMAC_ALGO));
-		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
-			throw new IllegalStateException("failed to initialize HMAC: " + e.getMessage(), e);
+			this.salt = MessageDigest.getInstance(HASH_ALGO);
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
-//	public User parseUserFromToken(String token) {
-//		final String[] parts = token.split(SEPARATOR_SPLITTER);
-//		if (parts.length == 2 && parts[0].length() > 0 && parts[1].length() > 0) {
-//			try {
-//				final byte[] userBytes = fromBase64(parts[0]);
-//				final byte[] hash = fromBase64(parts[1]);
-//
-//				boolean validHash = Arrays.equals(createHmac(userBytes), hash);
-//				if (validHash) {
-//					final User user = fromJSON(userBytes);
-//					return user;
-//				}
-//			} catch (IllegalArgumentException e) {
-//				//log tempering attempt here
-//			}
-//		}
-//		return null;
-//	}
-
-	public String createTokenForUser(User user) {
-		byte[] userBytes = toJSON(user);
-		byte[] hash = createHmac(userBytes);
-		final StringBuilder sb = new StringBuilder();
-		sb.append(toBase64(userBytes));
-		sb.append(SEPARATOR);
-		sb.append(toBase64(hash));
-		return sb.toString();
+	public String createToken() {
+		salt.update(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+		return Hex.encodeHexString(salt.digest());
 	}
 
-//	private static User fromJSON(final byte[] userBytes) {
-//		try {
-//			return new ObjectMapper().readValue(new ByteArrayInputStream(userBytes), User.class);
-//		} catch (IOException e) {
-//			throw new IllegalStateException(e);
-//		}
-//	}
-
-	private static byte[] toJSON(User user) {
-		try {
-			return new ObjectMapper().writeValueAsBytes(user);
-		} catch (JsonProcessingException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	private static String toBase64(byte[] content) {
-		return DatatypeConverter.printBase64Binary(content);
-	}
-
-//	private static byte[] fromBase64(String content) {
-//		return DatatypeConverter.parseBase64Binary(content);
-//	}
-
-	// synchronized to guard internal hmac object
-	private synchronized byte[] createHmac(byte[] content) {
-		return hmac.doFinal(content);
-	}
 }
